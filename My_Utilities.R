@@ -35,106 +35,136 @@ random_bigz_lngth_n <- function(length = 100) {
 
 
 
-# Returns a data table of Prime numbers of length n l long
-# With how long it took to find them
-
-prime_maker <- function(n, l= 10) {
-  Primes_length_n <- data.table(Primes=NULL,
-                                find_time_secs = NULL)
-  found_primes = 0
-  prime_start_find <- Sys.time()
-
-  while(found_primes < l) {
-    this_n <- random_bigz_lngth_n(n) %>%
-      as.character()
-
-    if(isprime(this_n) > 0) {
-      print(paste0('Found ', length(Primes_length_n$Primes)))
-      found_primes <- found_primes + 1
-      this_ft_secs <- as.duration((Sys.time()-prime_start_find))%>%
-        dseconds %>%
-        as.numeric()
-
-      Primes_length_n <- rbindlist(list(Primes_length_n,
-                                        data.table(Primes = this_n,
-                                                   find_time_secs = this_ft_secs)), use.names = TRUE)
-
-      print(Primes_length_n %>%
-              select(-Primes))
-
-      prime_start_find <- Sys.time()
-    }
-  }
-  Primes_length_n
-}
-
-
 # performs Excel Style rounding on a numeric vector
+# limited to 100,000 rows at a time.
 
 Excel_rounder <- function(x,
                           digits = 0,
-                          keep_Excel = FALSE,
+                          keep_files = FALSE,
                           defensive_mode = TRUE){
-  library(tidyverse)
-  library(openxlsx)
-  library(assertive)
+  library(tidyverse, verbose = FALSE, warn.conflicts = FALSE, quietly = TRUE)
+  library(openxlsx, verbose = FALSE, warn.conflicts = FALSE, quietly = TRUE)
+  library(assertive, verbose = FALSE, warn.conflicts = FALSE, quietly = TRUE)
 
-  Excel_max_rows <- 1048576
-  Excel_max_digits <- 15
-
+  Excel_max_rows <- 100000
+  max_digits <- 12
 
   vector_length <- length(x)
   char_lengths <- nchar(x)
 
   assert_is_numeric(x)
   assert_is_vector(x)
-  assert_all_are_in_closed_range(x, lower = -9.99999999999999E+307, upper = 9.99999999999999E+307)
+  assert_all_are_in_closed_range(x, lower = -9.99999999999999E+307,
+                                 upper = 9.99999999999999E+307)
   assert_all_are_less_than_or_equal_to(vector_length, Excel_max_rows)
-  assert_all_are_less_than_or_equal_to(char_lengths, Excel_max_digits)
+  assert_all_are_less_than_or_equal_to(char_lengths, max_digits)
 
   wb <- createWorkbook()
 
   addWorksheet(wb, 'ExcelRound')
 
-  writeData(wb, 'ExcelRound', x)
-
-  writeData(wb, 'ExcelRound',
-            round(x, digits),
-            startCol = 2)
+  excel_formulas <-  paste0('round(', x, ', ', digits, ')')
 
   writeFormula(wb, 'ExcelRound',
-               paste0('=round(', x, ', ', digits, ')'),
-               startCol = 3)
+               excel_formulas,
+               startCol = 1)
 
-  saveWorkbook(wb, 'ExcelRounding.xlsx', overwrite = TRUE)
+  #writeData(wb, 'ExcelRound', 'ExcelRounded', 'A1')
 
-  wb_rounded <- loadWorkbook('ExcelRounding.xlsx')
+  writeData(wb, 'ExcelRound',
+            round(x, digits = digits),
+            startCol = 2)
+
+  writeData(wb, 'ExcelRound',
+            x,
+            startCol = 3)
+
+  writeData(wb, 'ExcelRound', x, startCol = 3)
+
+  openxlsx::saveWorkbook(wb, 'ExcelRounding.xlsx', overwrite = TRUE)
+
+  ##### I hope to remove this dependancy on XLConnect -----
+
+  ### XLConnect is the only way I can write the result of the formula rather
+  ### Than the text of the formula at this stage, but it slows things down
+  ### and relies on JAVA
+  gc(verbose = FALSE, full = TRUE)
+  options(java.parameters = "-Xmx6g" )
+  suppressMessages(library(XLConnect, verbose = FALSE, warn.conflicts = FALSE, quietly = TRUE))
+  options(java.parameters = "-Xmx6g" )
+  xlcFreeMemory()
+  gc(verbose = FALSE, full = TRUE)
+  xlcwb <- XLConnect::loadWorkbook('ExcelRounding.xlsx')
+  data <- XLConnect::readWorksheet(xlcwb, sheet = 'ExcelRound', header = FALSE)
+  gc(verbose = FALSE, full = TRUE)
+  detach('package:XLConnect', unload = TRUE)
+  gc(verbose = FALSE, full = TRUE)
+
+  ##### End dependency -----
+
+  output <- data[, 1]
+
+  if (keep_files == FALSE) {file.remove('ExcelRounding.xlsx')}
+
+  output
+
 }
 
+#testing all tests take about 1 minute on intel macbook pro 14 inch
 
-#testing all tests take about 2 minutes on intel macbook pro 14 inch
+start_time <- Sys.time()
+# testing max rows
+t1_result <- Excel_rounder(1:100000)
+t2_result <-Excel_rounder(-100000:-1)
+t3_result <- Excel_rounder((1:100000)+.5)
+t4_result <- Excel_rounder((-100000:-1)-.5)
 
-  start_time <- Sys.time()
-  # testing max rows
-  Excel_rounder(1:1048576)
-  Excel_rounder(-1048576:-1)
-  Excel_rounder((1:1048576)+.5)
-  Excel_rounder((-1048576:-1)-.5)
+# testing max rows and digits
+t5_result <- Excel_rounder(6789123456:(6789123456+100000)+.5)
+# testing edge cases
+t6_result <- Excel_rounder(0)
+t7_result <- Excel_rounder(NA)
+t8_result <- Excel_rounder(NULL)
+t9_result <- Excel_rounder(NaN)
+t10_result <- Excel_rounder('a')
 
-  # testing max rows and digits
-  Excel_rounder(nchar(123456789123456:(123456789123456+1048575)+.5))
-  # testing edge cases
-  Excel_rounder(0)
-  Excel_rounder(NA)
-  Excel_rounder(NULL)
-  Excel_rounder(NaN)
-  Excel_rounder('a')
+# testing results match test data
 
-  # testing results match test data
+test_data <- data.frame(input = c(6789012345.5,
+                                  46.5,
+                                  -5,
+                                  -4.5,
+                                  -4,
+                                  3.5,
+                                  -2,
+                                  -2.5,
+                                  0,
+                                  2.5,
+                                  3.5,
+                                  4.5,
+                                  5,
+                                  2.500000),
+                        ex_ouptut = c(6789012346,
+                                      47,
+                                      -5,
+                                      -5,
+                                      -4,
+                                      4,
+                                      -2,
+                                      -3,
+                                      0,
+                                      3,
+                                      4,
+                                      5,
+                                      5,
+                                      3))
 
-  # timing of all tests
-  print(start_time - Sys.time())
+t11_result <- Excel_rounder(test_data$input)
 
+test_data$ExcelRound <- t11_result
 
+test_data$pass <- test_data$ex_ouptut == test_data$ExcelRound
 
+# timing of all tests
+print(Sys.time() - start_time)
 

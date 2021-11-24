@@ -29,4 +29,10 @@ mutate(p.adjusted = p.adjust(p.value)) %>%
 # Print the resulting country_coefficients variable
 country_coefficients
 
+# interquartile_range 
 
+# Lower limit = Q1 – 1.5*IQR = 5 – 1.5*15.75 = -18.625
+
+# And the upper limited is calculated as:
+
+# Upper limit = Q3 + 1.5*IQR = 20.75 + 1.5*15.75 = 44.375

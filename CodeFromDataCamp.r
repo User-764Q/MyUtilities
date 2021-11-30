@@ -36,3 +36,23 @@ country_coefficients
 # And the upper limited is calculated as:
 
 # Upper limit = Q3 + 1.5*IQR = 20.75 + 1.5*15.75 = 44.375
+
+# From previous step
+prediction_data <- explanatory_data %>% 
+  mutate(   
+    has_churned = predict(mdl_churn_vs_relationship, explanatory_data, type = "response"),
+    most_likely_outcome = round(has_churned)
+  )
+
+# Fit a logistic regression of churn vs. 
+# length of relationship using the churn dataset
+mdl_churn_vs_relationship <- glm(has_churned 
+~ time_since_first_purchase, data = churn, family = binomial)
+
+# Update the plot
+plt_churn_vs_relationship +
+  # Add most likely outcome points from prediction_data, 
+  # colored yellow, size 2
+  geom_point(data = prediction_data, aes(x = time_since_first_purchase, y = most_likely_outcome), size = 2, color = 'yellow')
+
+

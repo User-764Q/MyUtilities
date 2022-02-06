@@ -8,11 +8,6 @@ Print_The_Phrase <- function() {'hello world'}
 # Returns a bigz value of length n with random digits
 
 random_bigz_lngth_n <- function(length = 100) {
-  
-library(gmp)
-library(assertive)
-library(tidyverse)
-library(openxlsx)
 
   if(length < 3) {
     print('error - length must be greater than 2')

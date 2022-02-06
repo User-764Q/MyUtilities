@@ -47,6 +47,8 @@ prime_maker <- function(n, l= 10) {
   library(assertive, verbose = FALSE, warn.conflicts = FALSE, quietly = TRUE)
   library(tidyverse, verbose = FALSE, warn.conflicts = FALSE, quietly = TRUE)
   library(openxlsx, verbose = FALSE, warn.conflicts = FALSE, quietly = TRUE)
+  library(lubridate, verbose = FALSE, warn.conflicts = FALSE, quietly = TRUE)
+  library(data.table, verbose = FALSE, warn.conflicts = FALSE, quietly = TRUE)
 
   Primes_length_n <- data.table(Primes=NULL,
                                 find_time_secs = NULL)

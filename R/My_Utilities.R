@@ -1,7 +1,3 @@
-library(gmp)
-library(assertive)
-library(tidyverse)
-library(openxlsx)
 
 Print_The_Phrase <- function() {'hello world'}
 
@@ -9,10 +5,10 @@ Print_The_Phrase <- function() {'hello world'}
 
 random_bigz_lngth_n <- function(length = 100) {
 
-  library(gmp)
-  library(assertive)
-  library(tidyverse)
-  library(openxlsx)
+  library(gmp, verbose = FALSE, warn.conflicts = FALSE, quietly = TRUE)
+  library(assertive, verbose = FALSE, warn.conflicts = FALSE, quietly = TRUE)
+  library(tidyverse, verbose = FALSE, warn.conflicts = FALSE, quietly = TRUE)
+  library(openxlsx, verbose = FALSE, warn.conflicts = FALSE, quietly = TRUE)
 
   if(length < 3) {
     print('error - length must be greater than 2')
@@ -46,6 +42,12 @@ random_bigz_lngth_n <- function(length = 100) {
 # With how long it took to find them
 
 prime_maker <- function(n, l= 10) {
+
+  library(gmp, verbose = FALSE, warn.conflicts = FALSE, quietly = TRUE)
+  library(assertive, verbose = FALSE, warn.conflicts = FALSE, quietly = TRUE)
+  library(tidyverse, verbose = FALSE, warn.conflicts = FALSE, quietly = TRUE)
+  library(openxlsx, verbose = FALSE, warn.conflicts = FALSE, quietly = TRUE)
+
   Primes_length_n <- data.table(Primes=NULL,
                                 find_time_secs = NULL)
   found_primes = 0
